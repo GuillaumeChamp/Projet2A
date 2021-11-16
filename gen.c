@@ -10,9 +10,7 @@ int main (void)
         for(int i =0 ;i==100000;i++)
         {
                 send('A');
-                delay(500);
                 send('B');
-                delay(500);
         }
         return 0;
 }
