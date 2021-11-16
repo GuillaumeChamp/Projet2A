@@ -1,0 +1,9 @@
+
+prog: gen.o write.o
+        gcc -Wall -o prog gen.o write.o -lwiringPi
+
+gen.o : gen.c
+        gcc -c -Wall gen.c -lwiringPi
+
+write.o : write.c
+        gcc -c -Wall write.c -lwiringPi
