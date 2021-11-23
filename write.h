@@ -2,4 +2,5 @@
 #include <wiringPiI2C.h>
 
 int send(char c);
-int sendI2C(int c);
+int I2Csend(int c);
+char read(void);
