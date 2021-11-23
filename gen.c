@@ -2,16 +2,27 @@
 #include <wiringPi.h>
 #include <stdio.h>
 #include "write.h"
+PI_THREAD (SendData)
+{
+        piHiPri(20);
+        while(1){
+                send('8');
+                send('e');
+                send('A');
+        }
+}
 
 int main (void)
 {
         wiringPiSetup();
-        printf("started\n");
-        for(int i =0 ;i==100000;i++)
+        int i = piHiPri(10);
+        int x  = piThreadCreate(SendData);
+        printf("started p = %d %d\n",i,x);
+        while(1)
         {
-                send('A');
-                send('B');
+
         }
         return 0;
+
 }
 
