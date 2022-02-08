@@ -1,14 +1,16 @@
-#include <wiringPi.h>
 #include <stdio.h>
-#include <softPwm.h>
-#include "write.h"
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <math.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include <wiringPi.h>
+#include <softPwm.h>
+
 extern int errno;
 
 PI_THREAD (ReadUart){
@@ -63,5 +65,5 @@ int main (void)
         {
 
         }
-        return 0;
+        exit(EXIT_FAILURE);
 }
