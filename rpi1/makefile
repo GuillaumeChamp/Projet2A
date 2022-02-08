@@ -1,4 +1,4 @@
-all : main
+all : prog
 
 #binary files
 prog : read.o main.o
