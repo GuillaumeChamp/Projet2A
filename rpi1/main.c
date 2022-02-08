@@ -11,6 +11,8 @@
 #include <wiringPi.h>
 #include <softPwm.h>
 
+#include "read.h"
+
 extern int errno;
 
 PI_THREAD (ReadUart){
