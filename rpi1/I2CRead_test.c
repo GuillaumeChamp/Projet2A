@@ -15,7 +15,7 @@
 #define LIDAR_FRM_REG   0x11 // Free Running Mode
 #define LIDAR_FRM       0xFF
 
-int main(void) {
+void LIDAR_read(void) {
   int fd = wiringPiI2CSetup(LIDAR_I2C_ADDR);
   if (fd == -1) {
     printf("Setup problem\n");
