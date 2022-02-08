@@ -8,6 +8,7 @@
 #include <wiringSerial.h>
 #include <wiringPiI2C.h>
 #include "UARTI2Cfun.h"
+#include "I2CRead.h"
 
 #define LIDAR_I2C_ADDR  0x62
 #define LIDAR_CMD_REG   0x00
