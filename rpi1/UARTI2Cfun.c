@@ -28,7 +28,7 @@ int sendI2C(int c) {
 char readUART() {
   int fd;
   char* port = "/dev/serial0";
-  if ((fd=serialOpen(port,600) < 0) {
+  if ((fd=serialOpen(port,1152000) < 0) {
     return 1;
   }
   char ans = serialGetchar(fd);
