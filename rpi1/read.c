@@ -57,7 +57,7 @@ int readI2C(int fd) {
 */
   // bloc to add if not in free running mode
   
-if (wiringPiI2CReadReg8(fd,LIDAR_STATUS_REG)&0b01000000) == 0b01000000) {
+if ((wiringPiI2CReadReg8(fd,LIDAR_STATUS_REG)&0b01000000) == 0b01000000) {
     printf("System error during measurement\n");
     exit(EXIT_FAILURE);
   }
@@ -75,7 +75,7 @@ if (wiringPiI2CReadReg8(fd,LIDAR_STATUS_REG)&0b01000000) == 0b01000000) {
 char readUART() {
   int fd;
   char* port = "/dev/serial0";
-  if ((fd=serialOpen(port,115200) < 0) return -1;
+  if ((fd=serialOpen(port,115200)) < 0) return -1;
   char ans = serialGetchar(fd);
   serialClose(fd);
   return ans;
