@@ -13,6 +13,10 @@
 
 #include "read.h"
 
+#define LIDAR_I2C_ADDR  0x62
+#define LIDAR_FRM_REG   0x11 // Free Running Mode
+#define LIDAR_FRM       0xFF
+
 extern int errno;
 
 double uartResult = 0;
@@ -98,8 +102,8 @@ int main (void)
         piHiPri(10);
         int uart = piThreadCreate(ReadUart);
         int i2c = piThreadCreate(ReadI2C);
-        //int pwm_thread = piThreadCreate(PwmManager);
-        printf("started p = %d\n",uart);
+        //int pwm = piThreadCreate(PwmManager);
+        printf("started : pUart = %d, pI2C = %d\n",uart,i2c);
         while(1) {}
         exit(EXIT_FAILURE);
 }
