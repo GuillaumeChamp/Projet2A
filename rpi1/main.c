@@ -15,24 +15,61 @@
 
 extern int errno;
 
+double uartResult = 0;
+double i2cResult = 0;
+double uartI2Csum = 0;
+
+int UART_received = 0;
+
 PI_THREAD (ReadUart){
-        piHiPri(10);
+        piHiPri(15);
         while(1){
-                double data=0;
+                double data = 0;
                 int dot = 0;
                 int nb = 0;
                 char read;
-                while ((read=readUART()) !='\n'){
+                while ((read=readUART()) !='\n' && nb < 7){
                         if (read == '.') dot = nb;
                         else if (read>47) {
                                 nb++;
                                 data = data*10 + read;
                         }
                 }
+                UART_received = 1;
+                // printf("UART_received (uart) : %d\n",UART_received);
                 data = data/pow(10,nb+1-dot);
-                printf("donnée : %f\n",data);
-                //sleep(1);
+                uartResult = data;
+                printf("uartResult : %f\n",uartResult);
+                uartI2Csum = uartResult + i2cResult;
+                printf("SUM = %f\n", uartI2Csum);
         }
+}
+
+PI_THREAD (ReadI2C){
+        piHiPri(12);
+        int fd = wiringPiI2CSetup(LIDAR_I2C_ADDR);
+        if (fd == -1) {
+                printf("Setup problem\n");
+                exit(EXIT_FAILURE);
+        }
+  
+        int frm_activation = wiringPiI2CWriteReg8(fd,LIDAR_FRM_REG,LIDAR_FRM);
+        if (frm_activation == -1) {
+                printf("Problem with setting up free running mode\n");
+                exit(EXIT_FAILURE);
+        }
+  
+        while(1) {
+                printf("UART_received (i2c) : %d\n", UART_received);
+                if (UART_received) {
+                        i2cResult = readI2C(fd);
+                        printf("I2C read = %d\n", i2cResult);
+                        UART_received = 0;
+                } else {
+                        printf("no UART received yet\n");
+                }
+        }
+}
 }
 
 PI_THREAD (PwmManager)
@@ -59,13 +96,10 @@ int main (void)
 {
         wiringPiSetup();
         piHiPri(10);
-        //int x = piThreadCreate(SendData);
-        int y = piThreadCreate(ReadUart);
+        int uart = piThreadCreate(ReadUart);
+        int i2c = piThreadCreate(ReadI2C);
         //int pwm_thread = piThreadCreate(PwmManager);
-        printf("started p = %d\n",y);
-        while(1)
-        {
-
-        }
+        printf("started p = %d\n",uart);
+        while(1) {}
         exit(EXIT_FAILURE);
 }
