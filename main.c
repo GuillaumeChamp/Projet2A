@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <math.h>
+#include <string.h>
+#include <stdint.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -19,9 +21,12 @@
 
 extern int errno;
 
-long xacc; // Float 32 : 4 bytes long single precision floating point
-long yacc;
-long zacc; 
+float xacc; // Float 32 : 4 bytes long single precision floating point
+float yacc;
+float zacc;
+float xgyr;
+float ygyr;
+float zgyr;
 double i2cResult = 0;
 double uartI2Csum = 0;
 
@@ -39,14 +44,15 @@ PI_THREAD (ReadUart){
         }
                 
         int buffLen = 50;
-        char rdBuffer[buffLen]; // will receive the values read from the MT
-        char wrBuffer[buffLen]; // will contain the values to be send to the MT
+        uint8_t rdBuffer[buffLen]; // will receive the values read from the MT
+        uint8_t wrBuffer[buffLen]; // will contain the values to be send to the MT
 
+        // configuration of the MTi
         int configDone = 0;
         while (!configDone) {
                 
-                memset(rdBuffer, 0, buffLen*sizeof(char));
-                memset(wrBuffer, 0, buffLen*sizeof(char));
+                memset(&rdBuffer[0], 0, buffLen*sizeof(uint8_t));
+                memset(&wrBuffer[0], 0, buffLen*sizeof(uint8_t));
                 
                 // receiving data
                 if (serialDataAvail(fd) == -1) {
@@ -63,27 +69,27 @@ PI_THREAD (ReadUart){
                 }
                 
                 // interpreting received data and answer in consequence
-                if ((rdBuffer[4] == '3')&&(rdBuffer[5] == 'E')) { // WakeUp signal
-                        wrBuffer[0] = 'FAFF3000D1'; // GoToConfig signal
-                        serialPuts(wrBuffer);
+                if (rdBuffer[2] == 0x3E) { // WakeUp signal
+                        uint8_t wb[] = {0xFA,0xFF,0x30,0x00,0xD1}; // GoToConfig signal
+                        for (int i=0;i<5;++) {serialPutchar(fd,wb[i]);}
                 }
                 
-                if ((rdBuffer[4] == '3')&&(rdBuffer[5] == '1')) { // GoToConfigAck signal
-                        wrBuffer[0] = 'FAFF18010200'; // SetBaudrate signal
-                        serialPuts(wrBuffer);
+                if (rdBuffer[2] == 0x31) { // GoToConfigAck signal
+                        uint8_t wb[] = {0xFA,0xFF,0x18,0x01,0x02,0x00}; // SetBaudrate signal
+                        for (int i=0;i<6;++) {serialPutchar(fd,wb[i]);}
                 } 
                 
-                if ((rdBuffer[4] == '1')&&(rdBuffer[5] == '9')) { // SetBaudrateAck signal
-                        wrBuffer[0] = 'FAFFC0024020006401'; // SetOutputConfiguration signal
-                        serialPuts(wrBuffer);
+                if (rdBuffer[2] == 0x19) { // SetBaudrateAck signal
+                        uint8_t wb[] = {0xFA,0xFF,0xC0,0x02,0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0x01}; // SetOutputConfiguration signal
+                        for (int i=0;i<13;++) {serialPutchar(fd,wb[i]);}
                 }
                 
-                if ((rdBuffer[4] == 'C')&&(rdBuffer[5] == '0')) { // SetOutputConfigurationAck signal
-                        wrBuffer[0] = 'FAFF100001'; // GoToMeasurement signal
-                        serialPuts(wrBuffer);
+                if (rdBuffer[2] == 0xC0) { // SetOutputConfigurationAck signal
+                        uint8_t wb[] = {0xFA,0xFF,0x10,0x00,0x01}; // GoToMeasurement signal
+                        for (int i=0;i<5;++) {serialPutchar(fd,wb[i]);}
                 }
                 
-                if ((rdBuffer[4] == '1')&&(rdBuffer[5] == '1')) { // GoToMeasurementAck signal
+                if (rdBuffer[2] == 0x11) { // GoToMeasurementAck signal
                         configDone = 1;
                 }
         
@@ -91,11 +97,14 @@ PI_THREAD (ReadUart){
         
         while(1){ // read MTData2 
                 
-                memset(rdBuffer, 0, buffLen*sizeof(char));
+                memset(&rdBuffer[0], 0, buffLen*sizeof(uint8_t));
                 
                 // receiving data
-                while (serialDataAvail(fd) == -1) {
-                        printf("No data available\n");
+                if (serialDataAvail(fd) == -1) {
+                        printf("Problem reading of data available\n");
+                }
+                while (serialDataAvail(fd) == 0) {
+                        printf("No data available\n");        
                 }
                 int rdCount = 0;
                 while (serialDataAvail(fd) > -1) {
@@ -103,21 +112,34 @@ PI_THREAD (ReadUart){
                         rdCount++;
                 }
                 
-                if ((rdBuffer[4] == '3')&&(rdBuffer[5] == '6')) { // MTData
-                        char tempxacc[4];
-                        char tempyacc[4];
-                        char tempzacc[4];
-                        char *eptr;
-                        strncpy(tempxacc,rdBuffer[16],4*sizeof(char));
-                        strncpy(tempyacc,rdBuffer[20],4*sizeof(char));
-                        strncpy(tempzacc,rdBuffer[24],4*sizeof(char));
-                        xacc = strtol(tempxacc, &eptr, 4);
-                        yacc = strtol(tempyacc, &eptr, 4);
-                        zacc = strtol(tempzacc, &eptr, 4);
+                if (rdBuffer[2] == 0x36) { // MTData
+                        uint8_t tempxacc[4];
+                        uint8_t tempyacc[4];
+                        uint8_t tempzacc[4];
+                        uint8_t tempxgyr[4];
+                        uint8_t tempygyr[4];
+                        uint8_t tempzgyr[4];
+                        for (int i=0;i<4;i++) {
+                                tempxacc[i]=rdBuffer[7+i];
+                                tempyacc[i]=rdBuffer[11+i];
+                                tempzacc[i]=rdBuffer[15+i];
+                                tempxgyr[i]=rdBuffer[22+i];
+                                tempygyr[i]=rdBuffer[26+i];
+                                tempzgyr[i]=rdBuffer[30+i];
+                        }
+                        // conversion to the actual values
+                        xacc = bytestof(tempxacc);
+                        yacc = bytestof(tempyacc);
+                        zacc = bytestof(tempzacc);
+                        xgyr = bytestof(tempxgyr);
+                        ygyr = bytestof(tempygyr);
+                        zgyr = bytestof(tempzgyr);
                 }
-                printf(" xacc : %ld\n yacc : %ld\n zacc : %ld\n",xacc,yacc,zacc);
+                printf(" xacc : %f\n yacc : %f\n zacc : %f\n",xacc,yacc,zacc);
+                printf(" xgyr : %f\n ygyr : %f\n zgyr : %f\n",xgyr,ygyr,zgyr);
         }
-        
+        free(rdBuffer);
+        free(wrBuffer);
         serialClose(fd);
 }
 
