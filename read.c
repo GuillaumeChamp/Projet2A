@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdint.h>
+#include <math.h>
 
 #include <wiringPi.h>
 #include <wiringSerial.h>
@@ -39,3 +41,20 @@ char readUART() {
   return ans;
 }
 
+float bytestof(uint8_t bytes[]) {
+  // for 4 bytes big endian arrays
+  // res = s*(2^p)*m
+  
+  // sign
+  int s;
+  if (bytes[0]>>7) {s = -1;}
+  else {s = 1;}
+  
+  // power
+  int p = ((bytes[0]&&0x80)<<1) + (bytes[1]>>7);
+  
+  // mantisse
+  int m = ((bytes[1]&&0x80)<<16) + (bytes[2]<<8) + bytes[3];
+  
+  return s*pow(2,p)*m;
+}
