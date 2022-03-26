@@ -51,10 +51,18 @@ float bytestof(uint8_t bytes[]) {
   else {s = 1;}
   
   // power
-  int p = ((bytes[0]&&0x80)<<1) + (bytes[1]>>7);
+  int p = ((bytes[0]&0x7F)<<1) + ((bytes[1]&0x80)>>7) - 127;
   
   // mantisse
-  int m = ((bytes[1]&&0x80)<<16) + (bytes[2]<<8) + bytes[3];
+  float m =1;
+  for (int i=0;i<7;i++) {
+    m += ((bytes[1]>>(6-i))&0x1)*pow(2,-i-1);
+  }
+  for (int i=0;i<8;i++) {
+    m += ((bytes[2]>>(7-i))&0x1)*pow(2,-i-8);
+    m += ((bytes[3]>>(7-i))&0x1)*pow(2,-i-16);
+  }
   
+  printf("s=%d, p=%d, m=%f\n",s,p,m);
   return s*pow(2,p)*m;
 }
