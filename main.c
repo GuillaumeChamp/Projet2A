@@ -19,8 +19,6 @@
 #define LIDAR_FRM_REG   0x11 // Free Running Mode
 #define LIDAR_FRM       0xFF
 
-extern int errno;
-
 float xacc; // Float 32 : 4 bytes long single precision floating point
 float yacc;
 float zacc;
@@ -48,16 +46,19 @@ PI_THREAD (ReadUart){
         uint8_t wrBuffer[buffLen]; // will contain the values to be send to the MT
 
         // configuration of the MTi
-        int configDone = 0;
+        int configDone = 1; // for the moment, the config is done via MT Manager
+        int isInConfig = 0;
         while (!configDone) {
-                
                 memset(&rdBuffer[0], 0, buffLen*sizeof(uint8_t));
                 memset(&wrBuffer[0], 0, buffLen*sizeof(uint8_t));
                 
                 // receiving data
                 if (serialDataAvail(fd) == -1) {
+                        int config_err = errno;
                         printf("Problem reading if data available\n");
-                        exit(EXIT_FAILURE);
+                        printf(strerror(config_err));
+                        printf("\n");
+                        //exit(EXIT_FAILURE);
                 } 
                 while (serialDataAvail(fd) == 0) {
                         printf("No data available\n");
@@ -69,7 +70,7 @@ PI_THREAD (ReadUart){
                 }
                 
                 // interpreting received data and answer in consequence
-                if (rdBuffer[2] == 0x3E) { // WakeUp signal
+                if ((rdBuffer[2] == 0x3E)||(!isInConfig)) { // WakeUp signal
                         uint8_t wb[] = {0xFA,0xFF,0x30,0x00,0xD1}; // GoToConfig signal
                         for (int i=0;i<5;++) {serialPutchar(fd,wb[i]);}
                 }
@@ -91,12 +92,12 @@ PI_THREAD (ReadUart){
                 
                 if (rdBuffer[2] == 0x11) { // GoToMeasurementAck signal
                         configDone = 1;
+                        printf("Configuration MTi done\n");
                 }
         
         }
         
         while(1){ // read MTData2 
-                
                 memset(&rdBuffer[0], 0, buffLen*sizeof(uint8_t));
                 
                 // receiving data
@@ -104,13 +105,18 @@ PI_THREAD (ReadUart){
                         printf("Problem reading of data available\n");
                 }
                 while (serialDataAvail(fd) == 0) {
-                        printf("No data available\n");        
+                        //printf("No data available\n");        
                 }
                 int rdCount = 0;
-                while (serialDataAvail(fd) > -1) {
-                        rdBuffer[rdCount] = serialGetchar(fd);
-                        rdCount++;
+                int message_len = 35; // see doc for details
+                while (rdCount < message_len) {
+                        if ((serialDataAvail(fd) > 0) {
+                                rdBuffer[rdCount] = serialGetchar(fd);
+                                printf("%x ", rdBuffer[rdCount]);
+                                rdCount++;
+                        }
                 }
+                printf("\n");
                 
                 if (rdBuffer[2] == 0x36) { // MTData
                         uint8_t tempxacc[4];
@@ -119,7 +125,7 @@ PI_THREAD (ReadUart){
                         uint8_t tempxgyr[4];
                         uint8_t tempygyr[4];
                         uint8_t tempzgyr[4];
-                        for (int i=0;i<4;i++) {
+                        for (int i=0;i<4;i++) { // see doc for details for the values
                                 tempxacc[i]=rdBuffer[7+i];
                                 tempyacc[i]=rdBuffer[11+i];
                                 tempzacc[i]=rdBuffer[15+i];
