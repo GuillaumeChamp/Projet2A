@@ -17,6 +17,16 @@
 
 
 int readI2C(int fd) {
+  
+// bloc to add if not in free running mode
+/*int busy = wiringPiI2CReadReg8(fd,LIDAR_STATUS_REG)&0x1;
+  while (busy) {
+    printf("Busy\n");
+    busy = wiringPiI2CReadReg8(fd,LIDAR_STATUS_REG)&0x1;
+  }
+  printf("Not busy\n");
+*/
+  
   if ((wiringPiI2CReadReg8(fd,LIDAR_STATUS_REG)&0b01000000) == 0b01000000) {
     printf("System error during measurement\n");
     exit(EXIT_FAILURE);
