@@ -19,6 +19,12 @@
 #define LIDAR_FRM_REG   0x11 // Free Running Mode
 #define LIDAR_FRM       0xFF
 
+#define WPIN_PWM0       24
+#define WPIN_PWM1       27
+#define WPIN_PWM2       25
+#define WPIN_PWM3       28
+#define WPIN_PWM4       29
+
 float xacc; // Float 32 : 4 bytes long single precision floating point
 float yacc;
 float zacc;
@@ -96,7 +102,7 @@ PI_THREAD (ReadUart){
         serialClose(fd);
 }
 
-PI_THREAD (ReadI2C){
+PI_THREAD (ReadI2C) {
         piHiPri(12);
         int fd = wiringPiI2CSetup(LIDAR_I2C_ADDR);
         if (fd == -1) {
@@ -121,25 +127,33 @@ PI_THREAD (ReadI2C){
                 }
         }
 }
-}
 
-PI_THREAD (PwmManager)
-{
-        piHiPri(15);
-        softPwmCreate(1,50,100);
-        while(1){
-                int alpha = 0;
-                int alpha_file = open("alpha.txt",O_RDWR);
-                char *buffer = calloc(3,sizeof(char));
-                read(alpha_file,buffer,3);
-                for (int i = 0;i<3;i++){
-                        if (buffer[i] < 48) break;
-                        alpha = alpha*10 + (int) buffer[i]-48;
-                }
-                softPwmWrite(1,alpha);
-                close(alpha_file);
-                sleep(2);
-        }
+
+PI_THREAD (PwmManager) {
+	piHiPri(15);
+	int wpin_pwm[] = {WPIN_PWM0,WPIN_PWM1,WPIN_PWM2,WPIN_PWM3,WPIN_PWM4};
+
+	// prepare the alphas, checking that the memory spaces are accessible
+	// and create the PWMs
+	int alphas[5];
+	int temp;
+	for (int i=0;i<5;i++) {
+		if ((temp=readAlpha(i))<0) {
+			printf("Problem reading alpha %d\n",i);
+			alphas[i]=0;
+		} else {alphas[i]=temp;}
+		softPwmCreate(wpin_pwm[i],alphas[i],100);
+	}
+	
+	// read the (potentially) new value of alpha every second
+	while(1){
+		for (int i=0;i<5;i++) {
+			if ((alphas[i]=readAlpha(i))<0) {
+				//printf("Problem reading alpha %d, no update done\n",i);
+			} else {softPwmWrite(wpin_pwm[i],alphas[i]);}
+		}
+		sleep(1);
+	}
 }
 
 
