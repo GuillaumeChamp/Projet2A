@@ -6,6 +6,9 @@
 #include <stdint.h>
 #include <math.h>
 
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
 #include <wiringPi.h>
 #include <wiringSerial.h>
 #include <wiringPiI2C.h>
@@ -136,3 +139,26 @@ float bytestof(uint8_t bytes[]) {
   printf("s=%d, p=%d, m=%f\n",s,p,m);
   return s*pow(2,p)*m;
 }
+
+int readAlpha(int pwm) {
+	int memID = -1;
+	if ((pwm>=0)&&(pwm<=4)) {memID = 10+pwm;}
+	else {
+		printf("This PWM does not exist, choose a value between 0 and 4\n");
+		return -1
+	}
+
+	int shmID = shmget(memID,sizeof(int),0);
+	if (shmID == -1) {
+		//printf("Create the space before accessing it\n");
+		return -1;
+    }
+	
+	int *mem = shmat(shmID,NULL,0);
+	//printf("New alpha for memID %d is %d\n",memID,*mem);
+	return *mem;
+}
+
+
+
+
