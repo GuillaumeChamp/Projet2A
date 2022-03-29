@@ -41,7 +41,7 @@ int readI2C(int fd) {
   return ans;
 }
 
-
+// not used but show the main things to do to read UART
 char readUART() {
   int fd;
   char* port = "/dev/serial0";
@@ -49,6 +49,65 @@ char readUART() {
   char ans = serialGetchar(fd);
   serialClose(fd);
   return ans;
+}
+
+// function to call to configure the MTi
+// for now, the configuration is done by MT Manager so don't need it
+int configIMU(int configDone) {
+
+  int buffLen = 50;
+  uint8_t rdBuffer[buffLen];
+
+  // configuration of the MTi
+  int isInConfig = 0;
+  while (!configDone) {
+    memset(&rdBuffer[0], 0, buffLen*sizeof(uint8_t));
+
+    // receiving data
+    if (serialDataAvail(fd) == -1) {
+      int config_err = errno;
+      printf("Problem reading if data available\n");
+      printf(strerror(config_err));
+      printf("\n");
+      //exit(EXIT_FAILURE);
+     } 
+    while (serialDataAvail(fd) == 0) {
+      printf("No data available\n");
+    }
+    int rdCount = 0;
+    while (serialDataAvail(fd) > 0) {
+      rdBuffer[rdCount] = serialGetchar(fd);
+      rdCount++;
+    }
+                
+    // interpreting received data and answer in consequence
+    if ((rdBuffer[2] == 0x3E)||(!isInConfig)) { // WakeUp signal
+      uint8_t wb[] = {0xFA,0xFF,0x30,0x00,0xD1}; // GoToConfig signal
+      for (int i=0;i<5;++) {serialPutchar(fd,wb[i]);}
+    }
+
+    if (rdBuffer[2] == 0x31) { // GoToConfigAck signal
+      uint8_t wb[] = {0xFA,0xFF,0x18,0x01,0x02,0x00}; // SetBaudrate signal
+      for (int i=0;i<6;++) {serialPutchar(fd,wb[i]);}
+    } 
+
+    if (rdBuffer[2] == 0x19) { // SetBaudrateAck signal
+      uint8_t wb[] = {0xFA,0xFF,0xC0,0x02,0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0x01}; // SetOutputConfiguration signal
+      for (int i=0;i<13;++) {serialPutchar(fd,wb[i]);}
+    }
+
+    if (rdBuffer[2] == 0xC0) { // SetOutputConfigurationAck signal
+      uint8_t wb[] = {0xFA,0xFF,0x10,0x00,0x01}; // GoToMeasurement signal
+      for (int i=0;i<5;++) {serialPutchar(fd,wb[i]);}
+    }
+
+    if (rdBuffer[2] == 0x11) { // GoToMeasurementAck signal
+      configDone = 1;
+      printf("Configuration MTi done\n");
+    }
+        
+  }
+  
 }
 
 float bytestof(uint8_t bytes[]) {
