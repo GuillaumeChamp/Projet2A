@@ -84,6 +84,7 @@ int configIMU(int configDone) {
     if ((rdBuffer[2] == 0x3E)||(!isInConfig)) { // WakeUp signal
       uint8_t wb[] = {0xFA,0xFF,0x30,0x00,0xD1}; // GoToConfig signal
       for (int i=0;i<5;++) {serialPutchar(fd,wb[i]);}
+      isInConfig = 1;
     }
 
     if (rdBuffer[2] == 0x31) { // GoToConfigAck signal
