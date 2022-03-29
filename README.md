@@ -1,4 +1,3 @@
 # Projet2A
-Code de la Raspberry
 
-Le main est la fonction gen.c compiler grâce au MakeFile. Il utilise le module write.
+Le code contient des fonctions de lecture pour les protocoles I2C et UART ainsi que des fonctions d'écriture pour le protocole PWM.
