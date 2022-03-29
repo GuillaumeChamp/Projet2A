@@ -43,59 +43,6 @@ PI_THREAD (ReadUart){
                 
         int buffLen = 50;
         uint8_t rdBuffer[buffLen]; // will receive the values read from the MT
-        uint8_t wrBuffer[buffLen]; // will contain the values to be send to the MT
-
-        // configuration of the MTi
-        int configDone = 1; // for the moment, the config is done via MT Manager
-        int isInConfig = 0;
-        while (!configDone) {
-                memset(&rdBuffer[0], 0, buffLen*sizeof(uint8_t));
-                memset(&wrBuffer[0], 0, buffLen*sizeof(uint8_t));
-                
-                // receiving data
-                if (serialDataAvail(fd) == -1) {
-                        int config_err = errno;
-                        printf("Problem reading if data available\n");
-                        printf(strerror(config_err));
-                        printf("\n");
-                        //exit(EXIT_FAILURE);
-                } 
-                while (serialDataAvail(fd) == 0) {
-                        printf("No data available\n");
-                }
-                int rdCount = 0;
-                while (serialDataAvail(fd) > 0) {
-                        rdBuffer[rdCount] = serialGetchar(fd);
-                        rdCount++;
-                }
-                
-                // interpreting received data and answer in consequence
-                if ((rdBuffer[2] == 0x3E)||(!isInConfig)) { // WakeUp signal
-                        uint8_t wb[] = {0xFA,0xFF,0x30,0x00,0xD1}; // GoToConfig signal
-                        for (int i=0;i<5;++) {serialPutchar(fd,wb[i]);}
-                }
-                
-                if (rdBuffer[2] == 0x31) { // GoToConfigAck signal
-                        uint8_t wb[] = {0xFA,0xFF,0x18,0x01,0x02,0x00}; // SetBaudrate signal
-                        for (int i=0;i<6;++) {serialPutchar(fd,wb[i]);}
-                } 
-                
-                if (rdBuffer[2] == 0x19) { // SetBaudrateAck signal
-                        uint8_t wb[] = {0xFA,0xFF,0xC0,0x02,0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0x01}; // SetOutputConfiguration signal
-                        for (int i=0;i<13;++) {serialPutchar(fd,wb[i]);}
-                }
-                
-                if (rdBuffer[2] == 0xC0) { // SetOutputConfigurationAck signal
-                        uint8_t wb[] = {0xFA,0xFF,0x10,0x00,0x01}; // GoToMeasurement signal
-                        for (int i=0;i<5;++) {serialPutchar(fd,wb[i]);}
-                }
-                
-                if (rdBuffer[2] == 0x11) { // GoToMeasurementAck signal
-                        configDone = 1;
-                        printf("Configuration MTi done\n");
-                }
-        
-        }
         
         while(1){ // read MTData2 
                 memset(&rdBuffer[0], 0, buffLen*sizeof(uint8_t));
@@ -112,6 +59,7 @@ PI_THREAD (ReadUart){
                 while (rdCount < message_len) {
                         if ((serialDataAvail(fd) > 0) {
                                 rdBuffer[rdCount] = serialGetchar(fd);
+                                if ((rdCount==0)&&(rdBuffer[rdCount]==0xFA)) {rdCount--;} // so that every buffer starts with 0xFA
                                 printf("%x ", rdBuffer[rdCount]);
                                 rdCount++;
                         }
@@ -145,7 +93,6 @@ PI_THREAD (ReadUart){
                 printf(" xgyr : %f\n ygyr : %f\n zgyr : %f\n",xgyr,ygyr,zgyr);
         }
         free(rdBuffer);
-        free(wrBuffer);
         serialClose(fd);
 }
 
