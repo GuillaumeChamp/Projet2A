@@ -50,6 +50,9 @@ PI_THREAD (ReadUart){
         int buffLen = 50;
         uint8_t rdBuffer[buffLen]; // will receive the values read from the MT
         
+	int configDone = 1; // set to 0 if need to do the config
+	configIMU(configDone);
+	
         while(1){ // read MTData2 
                 memset(&rdBuffer[0], 0, buffLen*sizeof(uint8_t));
                 
