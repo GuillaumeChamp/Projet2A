@@ -143,9 +143,13 @@ PI_THREAD (PwmManager) {
 	for (int i=0;i<5;i++) {
 		if ((temp=readAlpha(i))<0) {
 			printf("Problem reading alpha %d\n",i);
-			alphas[i]=0;
-		} else {alphas[i]=temp;}
-		softPwmCreate(wpin_pwm[i],alphas[i],100);
+			alphas[i]=10;
+		} else {
+			if ((temp < 10)|(temp > 20)){
+				printf("alpha is an integer between 10 and 20");
+			} else {alphas[i]=temp;}
+		}
+		softPwmCreate(wpin_pwm[i],alphas[i],200); // @ 50 Hz
 	}
 	
 	// read the (potentially) new value of alpha every second
@@ -153,21 +157,40 @@ PI_THREAD (PwmManager) {
 		for (int i=0;i<5;i++) {
 			if ((alphas[i]=readAlpha(i))<0) {
 				//printf("Problem reading alpha %d, no update done\n",i);
-			} else {softPwmWrite(wpin_pwm[i],alphas[i]);}
+			} else {
+				if ((temp < 10)|(temp > 20)){
+					printf("alpha is an integer between 10 and 20");
+				} else {alphas[i]=temp;}
+				softPwmWrite(wpin_pwm[i],alphas[i]);
+			}
 		}
 		sleep(1);
 	}
 }
 
+PI_THREAD (WriteOui) {
+	piHiPri(14);
+	int ouiPin = 3;
+	int frequency = 100;
+	int oui = ouiCreate(ouiPin,frequency);
+	printf("oui = %d\n",oui);
+	while(1) {
+		// ouiWrite(ouiPin, frequency);
+	}
+}
 
 int main (void)
 {
         wiringPiSetup();
         piHiPri(10);
-        int uart = piThreadCreate(ReadUart);
-        int i2c = piThreadCreate(ReadI2C);
+        //int uart = piThreadCreate(ReadUart);
+        //int i2c = piThreadCreate(ReadI2C);
         //int pwm = piThreadCreate(PwmManager);
-        printf("started : pUart = %d, pI2C = %d\n",uart,i2c);
+	int oui = piThreadCreate(WriteOui);
+        //printf("uart started : p = %d\n",uart);
+        //printf("i2c started : p = %d\n",i2c);
+        //printf("pwm started : p = %d\n",pwm);
+        printf("oui started : p = %d\n",oui);
         while(1) {}
         exit(EXIT_FAILURE);
 }
