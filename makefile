@@ -1,8 +1,8 @@
 all : prog
 
 #binary files
-prog : read.o main.o
-  gcc -Wall -o prog main.o read.o -lwiringPi -lpthread -lm
+prog : read.o main.o generate.o
+  gcc -Wall -o prog main.o read.o generate.o -lwiringPi -lpthread -lm
   
 update : update.o
   gcc -Wall -o update update.o
@@ -17,6 +17,9 @@ read.o : read.c
 main.o : main.c 
   gcc -c -Wall main.c -lwiringPi -lpthread -lm
   
+generate.o : generate.c 
+  gcc -c -Wall generate.c -lwiringPi -lpthread -lm
+  
 update.o : update.c
   gcc -c -Wall update.c
   
@@ -25,4 +28,4 @@ readmem.o : readmem.c
 
 #clean
 clean :
-  rm -f testRead testWrite PWM_test *.o
+  rm -f prog*.o
