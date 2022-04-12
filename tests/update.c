@@ -5,6 +5,9 @@
 #include <string.h>
 #include <math.h>
 
+//This methode is used to change the value of a variable
+//Can be used to test motor by using the PWM
+
 int main(int argc,char** argv){
         if(argc!=3){
                 printf("syntaxe error : update var value\n");
