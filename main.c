@@ -34,7 +34,7 @@ float zgyr;
 double i2cResult = 0;
 double uartI2Csum = 0;
 
-int UART_received = 0;
+//int UART_received = 0;
 
 PI_THREAD (ReadUart){
         piHiPri(15);
@@ -118,9 +118,16 @@ PI_THREAD (ReadI2C) {
                 printf("Problem with setting up free running mode\n");
                 exit(EXIT_FAILURE);
         }
-  
+	
+	int askMeasure = wiringPiI2CWriteReg8(fd,0x00,0x04);
+	if (askMeasure==-1) {
+		printf("Problem with measure asking\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	
         while(1) {
-                printf("UART_received (i2c) : %d\n", UART_received);
+/*                printf("UART_received (i2c) : %d\n", UART_received);
                 if (UART_received) {
                         i2cResult = readI2C(fd);
                         printf("I2C read = %d\n", i2cResult);
@@ -128,6 +135,10 @@ PI_THREAD (ReadI2C) {
                 } else {
                         printf("no UART received yet\n");
                 }
+*/
+		i2cresult = readI2C(fd);
+		printf("I2C read = %d\n",i2cresult);
+		delayMicroseconds(1000000);
         }
 }
 
